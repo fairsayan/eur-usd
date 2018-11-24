@@ -1,0 +1,52 @@
+package EurUsd
+
+import scala.collection.mutable.ListBuffer
+
+import collection.JavaConversions._
+import com.github.tototoshi.csv._
+import java.io.{ IOException, File, FileOutputStream, BufferedWriter, OutputStreamWriter }
+
+object Prepare {
+  def main(args: Array[String]): Unit = {
+    val reader = CSVReader.open(new File("eur-usd.csv"))
+    var sequence = new ListBuffer[Double]()
+    val step:Int = 2
+    val size:Int = 21
+    var current:Int = 1
+
+    try {
+      val fout:File = new File("data.txt")
+      val fos:FileOutputStream = new FileOutputStream(fout)
+      val bw:BufferedWriter = new BufferedWriter(new OutputStreamWriter(fos))
+
+      reader.foreach(fields => {
+        val num:Double = fields(1).replace(',', '.').toDouble
+        sequence += num
+        if (sequence.size() > size) sequence.remove(0)
+        if ( current >= step && sequence.size() == size ) {
+          current = 1
+          var lineElements: ListBuffer[Double] = sequence.clone
+          val output: Double = lineElements.remove(0)
+          var line: String = output.toString
+          var history:Int = 1;
+          lineElements.foreach( el => {
+            line += " " + history + ":" + el
+            history = history + 1
+          })
+          bw.write(line)
+          bw.newLine()
+        } else current += 1
+      })
+
+      bw.close()
+
+    } catch {
+      case ex: IOException => {
+        println("IO Exception")
+      }
+    }
+
+    reader.close()
+  }
+}
+
